@@ -5,7 +5,7 @@
 #include <GL/gl.h>
 #else
 #if __GNUC__
-#include <GL/gl.h>
+#include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
 #endif
@@ -14,6 +14,7 @@
 #include "XPLMDisplay.h"
 #include "XPLMDataAccess.h"
 #include "XPLMGraphics.h"
+#include "XPLMPlugin.h"
 #include "drawing.h"
 #include "fonts.h"
 #include "data_access.h"
@@ -93,6 +94,8 @@ PLUGIN_API void XPluginReceiveMessage(
   long   inMessage,
   void *   inParam)
 {
+    if (inMessage == XPLM_MSG_PLANE_LOADED)
+        initAcfValues();
 }
 
 /*
@@ -116,21 +119,36 @@ int MyDrawCallback(
   void *               inRefcon)
 {
 
-  if (config->visible == 0)
+  if (config->visible == 0 ||
+	  (config->visible == 1 && config->toggleOutside && getViewIsExternal()))
     return 1;
-  // turn off blending
-  XPLMSetGraphicsState(0, 0, 0, 0, 0, 0, 0);
+  XPLMSetGraphicsState(0, 0, 0, 0, 0, 0, 0); // turn off blending
 
   /* Do the actual drawing.  use GL_LINES to draw sets of discrete lines.
    * Each one will go 100 meters in any direction from the plane. */
   TranslateToCenter();
-  DrawCenterBox();
-  DrawNoseBox(getPitch(), getRoll());
-  DrawMovementArrow(getTrueHeading(), getVX(), getVY(), getVZ());
+  if (config->visPitchRoll) {
+    DrawCenterBox();
+    DrawNoseBox(getPitch(), getRoll());
+  }
+  if (config->visMovementArrow)
+    DrawMovementArrow(getTrueHeading(), getVX(), getVY(), getVZ());
+  // VSI & ball covered inside
   DrawVerticalSpeedIndicator(getVV());
-  DrawLandingBars(getRadarAltitude());
-  DrawSpeedIndicator(getIAS());
-  DrawWind(getWindDirection(), getWindSpeed(), getHeading());
+  if (config->visLandingBars)
+    DrawLandingBars(getRadarAltitude());
+  if (config->visIas)
+    DrawSpeedIndicator(getIAS());
+  if (config->visWind)
+    DrawWind(getWindDirection(), getWindSpeed(), getHeading());
+  DrawBalanceIndicator(getBalance(), getYawStringAngle());
+  if (config->visTorque) {
+      float lTorqs[10];
+      getTorque(lTorqs);
+      DrawTorque(lTorqs);
+  }
   DrawTexts();
+  //XPLMSetGraphicsState(1/*Fog*/, 1/*TexUnits*/, 1/*Lighting*/, 1/*AlphaTesting*/, 1/*AlphaBlending*/, 1/*DepthTesting*/, 1/*DepthWriting*/);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   return 1;
 }

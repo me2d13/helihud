@@ -41,7 +41,7 @@ typedef struct	tagIMAGEDATA
 
 #pragma pack(pop, ident)
 
-int		BitmapLoader(const char *FilePath, IMAGEDATA *ImageData);
+int		BitmapLoader(const char *FilePath, IMAGEDATA *ImageData, int pChannels);
 void    SwapEndian(short *Data);
 void    SwapEndian(long *Data);
 void    SwapRedBlue(IMAGEDATA *ImageData);

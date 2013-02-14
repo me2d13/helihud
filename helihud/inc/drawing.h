@@ -18,6 +18,9 @@
 #define WIND_ARROW_RADIUS_PX 0.38f
 #define WIND_ARROW_SIZE 0.015f
 #define WIND_SPEED_POS 0.3f
+#define BAL_IND_RANGE_PX 0.2f
+#define BAL_IND_RANGE_POS 0.45f
+#define BAL_IND_RADIUS_PX 0.02f
 
 void TranslateToCenter(void);
 void DrawCenterBox(void );
@@ -28,6 +31,8 @@ void DrawVerticalSpeedIndicator(float vv);
 void DrawSpeedIndicator(float v);
 void DrawWind(float pHeading, float pSpeed, float trueHeading);
 void DrawLandingBars(float radarAltitude);
+void DrawBalanceIndicator(float pBalInd, float pYawStr);
+void DrawTorque(float *pTrqs);
 int initGlResources(void );
 int destroyGlResources( void );
 

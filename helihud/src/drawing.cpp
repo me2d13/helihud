@@ -5,8 +5,14 @@
 #if LIN
 #include <GL/gl.h>
 #else
+#define TRUE 1
+#define FALSE 0
+#if APL
+#include <Carbon/Carbon.h>
+#endif
 #if __GNUC__
-#include <GL/gl.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -207,12 +213,13 @@ void DrawWind(float pHeading, float pSpeed, float pAcfHeading) {
   glEnd();
   glRotatef(angle, 0, 0, 1);
   // speed
+  SetGLText();
   DrawHUDNumber((int ) (convertSpeed(pSpeed, SU_KNOTS, getHudConfig()->wsUnits) + 0.5f) , GetSmallFont(), 3, -WIND_SPEED_POS*lSize, -WIND_SPEED_POS*lSize, 1);
   if (getHudConfig()->showUnits)
     DrawHUDText(getUnitsLabel(getHudConfig()->wsUnits), GetSmallFont(),
                 -WIND_SPEED_POS*lSize, -WIND_SPEED_POS*lSize-GetSmallFont()->charHeight-3, 1);
-
-  //DrawHUDNumber((int ) pHeading , GetSmallFont(), 3, -WIND_SPEED_POS*lSize, -100, 0);
+  //DrawHUDNumber((int ) getViewIsExternal() , GetSmallFont(), 3, 0, 100, 0);
+  XPLMSetGraphicsState(0, 0, 0, 0, 0, 0, 0); // turn off blending
 #ifdef DEBUG
 
   float color[] = { 1.0, 1.0, 1.0 };
@@ -230,55 +237,60 @@ void DrawVerticalSpeedIndicator(float vv) {
   float lColor[3];
   HudConfig* lConfig = getHudConfig();
   float lSize = lConfig->size;
-  y_pos = (vv / lConfig->rngVsiBallFpm) * VSI_CIRCLE_RANGE_PX*lSize;
-  if (y_pos > VSI_RANGE_PX*lSize)
-    y_pos = VSI_CIRCLE_RANGE_PX*lSize;
-  else if (y_pos < -VSI_CIRCLE_RANGE_PX*lSize)
-    y_pos = -VSI_CIRCLE_RANGE_PX*lSize;
-  if (y_pos < 0)
-    interColor(lConfig->clVSBallMiddle, lConfig->clVSBallLow, lColor, -y_pos/(VSI_CIRCLE_RANGE_PX*lSize));
-  else
-    interColor(lConfig->clVSBallMiddle, lConfig->clVSBallHigh, lColor, y_pos/(VSI_CIRCLE_RANGE_PX*lSize));
-  glColor3fv(lColor);
-  glTranslatef(0, y_pos, 0);
-  DrawCircle(VSI_RADIUS_PX*lSize);
-  // return axis
-  glTranslatef(0, -y_pos, 0);
-  // shift VSI indicator
-  y_pos = (vv / lConfig->rngVsiFpm) * VSI_RANGE_PX*lSize;
-  if (y_pos > VSI_RANGE_PX*lSize)
-    y_pos = VSI_RANGE_PX*lSize;
-  else if (y_pos < -VSI_RANGE_PX*lSize)
-    y_pos = -VSI_RANGE_PX*lSize;
-  glTranslatef(-lSize/2, y_pos, 0);
-  // draw box
-  glColor3fv(getHudConfig()->clVSI);
-  HUDFontProperties *lSF = GetSmallFont();
-  int lTextWidth = getTextWidth(lSF, 4);
-  glBegin(GL_LINE_LOOP);
-  glVertex2f(0, lSF->charHeight / 2 + 2); // upper left
-  glVertex2f(lTextWidth+5, lSF->charHeight / 2 + 2); // upper right
-  glVertex2f(lTextWidth+15, 0); // right arrow
-  glVertex2f(lTextWidth+5, -lSF->charHeight / 2 - 2); // lower right
-  glVertex2f(0, -lSF->charHeight / 2 - 2); // lower left
-  glVertex2f(0, lSF->charHeight / 2 + 2); // upper left
-  glEnd();
-  // draw number
-  DrawHUDNumber((int )abs(convertSpeed(vv, SU_FPM, lConfig->vsUnits)), lSF, 4, lTextWidth+3, -lSF->charHeight / 2, 1);
-  if (lConfig->showUnits)
-    DrawHUDText(getUnitsLabel(lConfig->vsUnits), lSF,
-                lTextWidth+3, -lSF->charHeight / 2 - lSF->charHeight-3, 1);
-
-  // zero arrow
-  glTranslatef(0, -y_pos, 0);
-  glBegin(GL_LINE_LOOP);
-  glVertex2f(lTextWidth+15, 0); // right arrow
-  glVertex2f(lTextWidth+25, -lSF->charHeight / 2 - 2); // lower right
-  glVertex2f(lTextWidth+25, +lSF->charHeight / 2 + 2); // upper right
-  glVertex2f(lTextWidth+15, 0); // right arrow
-  glEnd();
-  // return axis
-  glTranslatef(lSize/2, 0, 0);
+  if (lConfig->visVsiBall) {
+    y_pos = (vv / lConfig->rngVsiBallFpm) * VSI_CIRCLE_RANGE_PX*lSize;
+    if (y_pos > VSI_RANGE_PX*lSize)
+      y_pos = VSI_CIRCLE_RANGE_PX*lSize;
+    else if (y_pos < -VSI_CIRCLE_RANGE_PX*lSize)
+      y_pos = -VSI_CIRCLE_RANGE_PX*lSize;
+    if (y_pos < 0)
+      interColor(lConfig->clVSBallMiddle, lConfig->clVSBallLow, lColor, -y_pos/(VSI_CIRCLE_RANGE_PX*lSize));
+    else
+      interColor(lConfig->clVSBallMiddle, lConfig->clVSBallHigh, lColor, y_pos/(VSI_CIRCLE_RANGE_PX*lSize));
+    glColor3fv(lColor);
+    glTranslatef(0, y_pos, 0);
+    DrawCircle(VSI_RADIUS_PX*lSize);
+    // return axis
+    glTranslatef(0, -y_pos, 0);
+  }
+  if (lConfig->visVsi) {
+      // shift VSI indicator
+      y_pos = (vv / lConfig->rngVsiFpm) * VSI_RANGE_PX*lSize;
+      if (y_pos > VSI_RANGE_PX*lSize)
+          y_pos = VSI_RANGE_PX*lSize;
+      else if (y_pos < -VSI_RANGE_PX*lSize)
+          y_pos = -VSI_RANGE_PX*lSize;
+      glTranslatef(-lSize/2, y_pos, 0);
+      // draw box
+      glColor3fv(getHudConfig()->clVSI);
+      HUDFontProperties *lSF = GetSmallFont();
+      int lTextWidth = getTextWidth(lSF, 4);
+      glBegin(GL_LINE_LOOP);
+      glVertex2f(0, lSF->charHeight / 2 + 2); // upper left
+      glVertex2f(lTextWidth+5, lSF->charHeight / 2 + 2); // upper right
+      glVertex2f(lTextWidth+15, 0); // right arrow
+      glVertex2f(lTextWidth+5, -lSF->charHeight / 2 - 2); // lower right
+      glVertex2f(0, -lSF->charHeight / 2 - 2); // lower left
+      glVertex2f(0, lSF->charHeight / 2 + 2); // upper left
+      glEnd();
+      // draw number
+      SetGLText();
+      DrawHUDNumber((int )abs(convertSpeed(vv, SU_FPM, lConfig->vsUnits)), lSF, 4, lTextWidth+3, -lSF->charHeight / 2, 1);
+      if (lConfig->showUnits)
+          DrawHUDText(getUnitsLabel(lConfig->vsUnits), lSF,
+                      lTextWidth+3, -lSF->charHeight / 2 - lSF->charHeight-3, 1);
+      XPLMSetGraphicsState(0, 0, 0, 0, 0, 0, 0); // turn off blending
+      // zero arrow
+      glTranslatef(0, -y_pos, 0);
+      glBegin(GL_LINE_LOOP);
+      glVertex2f(lTextWidth+15, 0); // right arrow
+      glVertex2f(lTextWidth+25, -lSF->charHeight / 2 - 2); // lower right
+      glVertex2f(lTextWidth+25, +lSF->charHeight / 2 + 2); // upper right
+      glVertex2f(lTextWidth+15, 0); // right arrow
+      glEnd();
+      // return axis
+      glTranslatef(lSize/2, 0, 0);
+  }
 }
 
 void DrawSpeedIndicator(float v) {
@@ -305,11 +317,12 @@ void DrawSpeedIndicator(float v) {
   glVertex2f(0, lSF->charHeight / 2 + 2); // upper right
   glEnd();
   // draw number
+  SetGLText(); // turn on blending
   DrawHUDNumber((int )abs(convertSpeed(v, SU_KNOTS, getHudConfig()->iasUnits)), lSF, 3, -3, -lSF->charHeight / 2, 1);
   if (getHudConfig()->showUnits)
     DrawHUDText(getUnitsLabel(getHudConfig()->iasUnits), lSF,
                 -3, -lSF->charHeight * 1.5f -3, 1);
-
+  XPLMSetGraphicsState(0, 0, 0, 0, 0, 0, 0); // turn off blending
   // zero arrow
   glTranslatef(0, -y_pos, 0);
   glBegin(GL_LINE_LOOP);
@@ -347,29 +360,116 @@ void DrawLandingBars(float radarAltitude) {
   }
 }
 
+void DrawBalanceIndicator(float pBalInd, float pYawStr) {
+  HudConfig* lConfig = getHudConfig();
+  if (!lConfig->visBalInd && !lConfig->visYawStr)
+    return;
+  float lBalPos;
+  float lYawPos;
+  float lSize = lConfig->size;
+  // move down on Y axis
+  glTranslatef(0, -BAL_IND_RANGE_POS*lSize, 0);
+  if (1) { // draw clipping box
+      glColor3fv(lConfig->clBalInd);
+      float x = (BAL_IND_RANGE_PX+BAL_IND_RADIUS_PX*1.2f)*lSize;
+      float y = BAL_IND_RADIUS_PX*1.2f*lSize; // 1.2 to have slight space to have ball inside
+      float ol = BAL_IND_RADIUS_PX*lSize; // x overlap on side indicator
+      //left
+      glBegin(GL_LINE_STRIP);
+      glVertex2f(-x+ol, -y); // upper 
+      glVertex2f(-x, -y); 
+      glVertex2f(-x, y); // lower 
+      glVertex2f(-x+ol, y); 
+      glEnd();
+      //right
+      glBegin(GL_LINE_STRIP);
+      glVertex2f(x-ol, -y); // upper 
+      glVertex2f(x, -y); 
+      glVertex2f(x, y); // lower 
+      glVertex2f(x-ol, y); 
+      glEnd();
+      glBegin(GL_LINES);
+      // top
+      glVertex2f(0, -y-ol);
+      glVertex2f(0,  -y);
+      // bottom
+      glVertex2f(0, y);
+      glVertex2f(0, y+ol);
+      glEnd();
+  }
+  if (lConfig->visBalInd) {
+    lBalPos = (pBalInd / lConfig->rngBalInd) * BAL_IND_RANGE_PX*lSize;
+    if (lBalPos > BAL_IND_RANGE_PX*lSize)
+      lBalPos = BAL_IND_RANGE_PX*lSize;
+    else if (lBalPos < -BAL_IND_RANGE_PX*lSize)
+      lBalPos = -BAL_IND_RANGE_PX*lSize;
+    glColor3fv(lConfig->clBalInd);
+    glTranslatef(-lBalPos, 0, 0);
+    DrawCircle(BAL_IND_RADIUS_PX*lSize);
+    // return axis
+    glTranslatef(lBalPos, 0, 0);
+  }
+  if (lConfig->visYawStr) {
+    lYawPos = (pYawStr / lConfig->rngYawStr) * BAL_IND_RANGE_PX*lSize;
+    if (lYawPos > BAL_IND_RANGE_PX*lSize)
+      lYawPos = BAL_IND_RANGE_PX*lSize;
+    else if (lYawPos < -BAL_IND_RANGE_PX*lSize)
+      lYawPos = -BAL_IND_RANGE_PX*lSize;
+    glColor3fv(lConfig->clBalInd);
+    glBegin(GL_LINES);
+    glVertex2f(lYawPos, -BAL_IND_RADIUS_PX*lSize);
+    glVertex2f(lYawPos,  BAL_IND_RADIUS_PX*lSize);
+    glEnd();
+  }
+  // return Y axis
+  glTranslatef(0, BAL_IND_RANGE_POS*lSize, 0);
+}
 
 void DrawTexts(void ) {
   HudConfig* lC = getHudConfig();
   float lSize = lC->size;
   // Draw Text
   SetGLText(); // turn on blending
+  //glColor3fv(getHudConfig()->clWindArrow);
   HUDFontProperties *lBF = GetBigFont();
   HUDFontProperties *lSF = GetSmallFont();
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);// nastaveni rezimu textury
+  float clBlue[] = {0.0f, 0.0f, 1.0f, 0.5f};
+  glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, clBlue);
   // heading
-  DrawHUDNumber((int )getHeading(), lBF, -3, 0, lSize/2 - lBF->charHeight, 0);
+  if (lC->visHeading)
+    DrawHUDNumber((int )getHeading(), lBF, -3, 0, lSize/2 - lBF->charHeight, 0);
   // alt
-  DrawHUDNumber((int )convertLength(getAltitude(), LU_FT, lC->altUnits), lBF, 5, -lSize/2, lSize/2 - lBF->charHeight, -1);
-  if (lC->showUnits)
-    DrawHUDText(getUnitsLabel(lC->altUnits), lSF,
+  if (lC->visAlt) {
+    DrawHUDNumber((int )convertLength(getAltitude(), LU_FT, lC->altUnits), lBF, 5, -lSize/2, lSize/2 - lBF->charHeight, -1);
+    if (lC->showUnits)
+      DrawHUDText(getUnitsLabel(lC->altUnits), lSF,
                 -lSize/2+getTextWidth(lBF, 5), lSize/2 - lSF->charHeight*2 - 3, 1);
+  }
 
   // radar alt
-  float rAlt = getRadarAltitude();
-  if (rAlt < lC->rngRAltM)
-  {
-    DrawHUDNumber((int )convertLength(rAlt, LU_M, lC->rAltUnits), lBF, 5, lSize/2, lSize/2 - lBF->charHeight, 1);
-    if (getHudConfig()->showUnits)
-      DrawHUDText(getUnitsLabel(lC->rAltUnits), lSF,
-                  lSize/2, lSize/2 - lSF->charHeight*2 - 3, 1);
+  if (lC->visRAlt) {
+      float rAlt = getRadarAltitude();
+      if (rAlt < lC->rngRAltM)
+      {
+          DrawHUDNumber((int )convertLength(rAlt, LU_M, lC->rAltUnits), lBF, 5, lSize/2, lSize/2 - lBF->charHeight, 1);
+          if (getHudConfig()->showUnits)
+              DrawHUDText(getUnitsLabel(lC->rAltUnits), lSF,
+                          lSize/2, lSize/2 - lSF->charHeight*2 - 3, 1);
+      }
   }
 }
+
+void DrawTorque(float *pTrqs) {
+  HudConfig* lC = getHudConfig();
+  float lSize = lC->size;
+
+  SetGLText(); // turn on blending
+  HUDFontProperties *lSF = GetSmallFont();
+  // trq
+  DrawHUDNumber((int )pTrqs[0], lSF, -4, -lSize/2, lSize/2*0.8f - lSF->charHeight, 0);
+//    DrawHUDText(getUnitsLabel(getHudConfig()->iasUnits), lSF,
+//                -3, -lSF->charHeight * 1.5f -3, 1);
+  XPLMSetGraphicsState(0, 0, 0, 0, 0, 0, 0); // turn off blending
+}
+

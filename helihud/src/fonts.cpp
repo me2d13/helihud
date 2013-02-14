@@ -8,9 +8,14 @@
 #define FALSE 0
 #define TRUE 1
 #else
+#define TRUE 1
+#define FALSE 0
+#if APL
+#include <Carbon/Carbon.h>
+#endif
 #if __GNUC__
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -27,6 +32,23 @@
 #include "XPLMGraphics.h"
 #include "XPLMUtilities.h"
 #include "BitmapSupport.h"
+
+#if APL
+int ConvertPath(const char * inPath, char * outPath, int outPathMaxLen)
+{
+        CFStringRef inStr = CFStringCreateWithCString(kCFAllocatorDefault, inPath ,kCFStringEncodingMacRoman);
+        if (inStr == NULL)
+                return -1;
+        CFURLRef url = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, inStr, kCFURLHFSPathStyle,0);
+        CFStringRef outStr = CFURLCopyFileSystemPath(url, kCFURLPOSIXPathStyle);
+        if (!CFStringGetCString(outStr, outPath, outPathMaxLen, kCFURLPOSIXPathStyle))
+                return -1;
+        CFRelease(outStr);
+        CFRelease(url);
+        CFRelease(inStr);
+        return 0;
+}
+#endif
 
 HUDFontProperties fontBig = {
                               "courier.bmp",  //fileName
@@ -88,9 +110,7 @@ void CreateHUDFont(HUDFontProperties *f) {
     glEnd();
     glEndList();
   }
-  char buffer[200];
-  sprintf(buffer, "Helihud: loaded font %s, base %d.\n", f->fileName, f->dispListBase);
-  debugLog(buffer);
+  debugLog("loaded font %s, base %d.\n", f->fileName, f->dispListBase);
 }
 
 void DrawHUDText(const char *pValue, HUDFontProperties* f, int pX, int pY, char pAllign) {
@@ -182,11 +202,15 @@ int LoadHUDFontTexture(HUDFontProperties *f)
 #endif
 
   /// Get the bitmap from the file
-  if (BitmapLoader(TextureFileName, &sImageData))
+  if (BitmapLoader(TextureFileName, &sImageData, 1))
   {
     Status=TRUE;
 
-    SwapRedBlue(&sImageData);
+    //SwapRedBlue(&sImageData); -- code was changed to convert RGB bmp file
+	// to 1-channel texture (luminance). So if we are using one channel only, 
+	// no need to swap RGB. Actually call above would crash xpl now,
+	// because it expects 3 bytes for each pixel so touches un-allocated memory
+	// for last 2 pixels
     pImageData = sImageData.pData;
 
     /// Do the opengl stuff using XPLM functions for a friendly Xplane existence.
@@ -194,7 +218,8 @@ int LoadHUDFontTexture(HUDFontProperties *f)
     sHeight=sImageData.Height;
     XPLMGenerateTextureNumbers(&(f->texId), 1);
     XPLMBindTexture2d(f->texId, 0);
-    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, sWidth, sHeight, GL_RGB, GL_UNSIGNED_BYTE, pImageData);
+    //gluBuild2DMipmaps(GL_TEXTURE_2D, 3, sWidth, sHeight, GL_RGB, GL_UNSIGNED_BYTE, pImageData);
+	gluBuild2DMipmaps(GL_TEXTURE_2D, 1, sWidth, sHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, pImageData);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
   }
@@ -208,3 +233,7 @@ void SetGLText( void ) {
   XPLMSetGraphicsState(0/*Fog*/, 1/*TexUnits*/, 0/*Lighting*/, 0/*AlphaTesting*/, 1/*AlphaBlending*/, 0/*DepthTesting*/, 0/*DepthWriting*/);
   glBlendFunc(GL_ONE, GL_ONE);
 }
+
+
+
+

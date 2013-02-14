@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "BitmapSupport.h"
+#include "data_access.h"
 
 /// Functions to handle endian differeneces between windows, linux and mac.
 #if APL
@@ -73,13 +74,17 @@ void SwapRedBlue(IMAGEDATA *ImageData)
 }
 
 /// Generic bitmap loader to handle all platforms
-int BitmapLoader(const char * FilePath, IMAGEDATA * ImageData)
+int BitmapLoader(const char * FilePath, IMAGEDATA * ImageData, int pChannels)
 {
   BMPFILEHEADER   Header;
   BMPINFOHEADER ImageInfo;
   long     Padding;
   FILE *     BitmapFile = NULL;
   int RetCode = 0;
+  int lTexDataSize;
+  unsigned char *lLineData;
+  unsigned char *lPtr;
+  int lBytesWritten = 0;
 
   ImageData->pData = NULL;
 
@@ -125,17 +130,47 @@ int BitmapLoader(const char * FilePath, IMAGEDATA * ImageData)
                       ImageData->Padding = Padding;
 
                       /// Allocate memory for the actual image.
-                      ImageData->Channels = 3;
-                      ImageData->pData = (unsigned char *) malloc(ImageInfo.biWidth * ImageInfo.biHeight * ImageData->Channels + ImageInfo.biHeight * Padding);
-
-                      if (ImageData->pData != NULL)
+                      if (pChannels < 1 || pChannels > 4) 
+                        pChannels = 3;
+                      ImageData->Channels = pChannels;
+					  lTexDataSize = ImageInfo.biWidth * ImageInfo.biHeight * ImageData->Channels + ImageInfo.biHeight * Padding;
+#ifdef DEBUG
+					  debugLog("Loading texture from file %s.\n", FilePath);
+					  debugLog("Width %d, height %d, using %d channels.\n", ImageInfo.biWidth, ImageInfo.biHeight, ImageData->Channels);
+					  debugLog("Allocating texture size: %d\n", lTexDataSize);
+#endif
+                      ImageData->pData = (unsigned char *) malloc(lTexDataSize);
+                      lLineData = (unsigned char *) malloc(ImageInfo.biWidth * 3 + Padding);
+                      if (ImageData->pData != NULL && lLineData != NULL)
                       {
-                        /// Get the actual image.
-                        if (fread(ImageData->pData, ImageInfo.biWidth * ImageInfo.biHeight * ImageData->Channels + ImageInfo.biHeight * Padding, 1, BitmapFile) == 1)
-                        {
-                          RetCode = 1;
-                        }
+                        /// Get the actual image - line by line
+						  lPtr = ImageData->pData;
+						  RetCode = 1;
+                          for (int i = 0; i < ImageInfo.biHeight; i++) {
+							  // read each line and convert 3 BMP channels to pChanells
+							  if (fread(lLineData, ImageInfo.biWidth * 3 + Padding, 1, BitmapFile) != 1)
+                              {
+							      RetCode = 0;
+                                  break;
+                              }
+							  for (int j = 0; j < ImageInfo.biWidth; j++) {
+								  switch (pChannels) {
+									  case 3:
+										  lPtr[0] = lLineData[j*3];
+										  lPtr[1] = lLineData[j*3+1];
+										  lPtr[2] = lLineData[j*3+2];
+										  break;
+									  case 1:
+										  lPtr[0] = lLineData[j*3];
+										  break;
+								  }
+								  lPtr += pChannels;
+								  lBytesWritten += pChannels;
+							  }
+						  }
                       }
+                      if (lLineData != NULL)
+                        free(lLineData);
                     }
                   }
               }
@@ -143,6 +178,9 @@ int BitmapLoader(const char * FilePath, IMAGEDATA * ImageData)
           }
           if (BitmapFile != NULL)
             fclose(BitmapFile);
+#ifdef DEBUG
+		  debugLog("Written %d bytes.\n", lBytesWritten);
+#endif
   return RetCode;
 }
 

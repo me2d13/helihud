@@ -25,6 +25,7 @@
 typedef struct HudConfig {
   char pluginPath[512];
   int visible;
+  int toggleOutside;
   float size;
   char centered;
   int x;
@@ -47,6 +48,23 @@ typedef struct HudConfig {
   float rngRAltM;
   float rngIasKt;
   float rngGSKn;
+  float rngBalInd;
+  float rngYawStr;
+  // isVisible switches
+  char visVsiBall;
+  char visPitchRoll;
+  char visMovementArrow;
+  char visLandingBars;
+  char visVsi;
+  char visRAlt;
+  char visIas;
+  char visGs;
+  char visWind;
+  char visAlt;
+  char visHeading;
+  char visBalInd;
+  char visYawStr;
+  char visTorque;
   // colors
   float clCenterBox[3];
   float clVSI[3];
@@ -59,10 +77,11 @@ typedef struct HudConfig {
   float clLandingBarsHigh[3];
   float clLandingBarsLow[3];
   float clWindArrow[3];
+  float clBalInd[3];
 }
 HudConfig;
 
-void debugLog(const char *value);
+void debugLog(const char *value, ...);
 void messageXpl(const char *value);
 int findDataRef(const char* name, XPLMDataRef *result);
 int initDataRefs(void);
@@ -80,6 +99,14 @@ float getAltitude();
 float getWindSpeed();
 float getWindDirection();
 float getIAS();
+float getBalance();
+float getYawStringAngle();
+int getTorque(float *pResult);
+void initAcfValues();
+
+//int getCurrentView();
+int getViewIsExternal();
+
 
 float convertSpeed(float pValue, char pFrom, char pTo);
 float convertLength(float pValue, char pFrom, char pTo);

@@ -6,6 +6,7 @@
 #include "data_access.h"
 #include "XPLMUtilities.h"
 #include "XPLMPlugin.h"
+#include <stdarg.h>
 
 XPLMDataRef  drPitch;
 XPLMDataRef  drRoll;
@@ -20,6 +21,21 @@ XPLMDataRef  drAltitude;
 XPLMDataRef  drWindSpeed;
 XPLMDataRef  drWindDirection;
 XPLMDataRef  drIAS;
+//XPLMDataRef  drCurrentView;
+XPLMDataRef  drViewIsExternal;
+XPLMDataRef  drBalInd;
+XPLMDataRef  drYawStr;
+
+// torque
+XPLMDataRef  drTrq;
+XPLMDataRef  drEnginesNo;
+XPLMDataRef  drTrqGreenLo;
+XPLMDataRef  drTrqGreenHi;
+XPLMDataRef  drTrqYellowLo;
+XPLMDataRef  drTrqYellowHi;
+XPLMDataRef  drTrqRedLo;
+XPLMDataRef  drTrqRedHi;
+XPLMDataRef  drMaxTrq;
 
 XPLMDataRef hudVisibleDR = NULL;
 XPLMCommandRef toggleHudCommand = NULL;
@@ -48,14 +64,31 @@ float clBlue[] = { 0.0f, 0.0f, 1.0f };
 float clPink[] = { 1.0f, 0.2f, 1.0f };
 float clNone[] = { 2.0f, 2.0f, 2.0f };
 
+int numberOfEngines = 1;
+float tqGreenLo;
+float tqGreenHi;
+float tqYellowLo;
+float tqYellowHi;
+float tqRedLo;
+float tqRedHi;
+float tqMax;
+
 int     GetHudVisibleCB(void* inRefcon);
 void SetHudVisibleCB(void* inRefcon, int inValue);
 int    toggleHudCommandHandler(XPLMCommandRef       inCommand,
                                XPLMCommandPhase     inPhase,
                                void *               inRefcon);
 
-void debugLog(const char *value) {
-  XPLMDebugString(value);
+void debugLog(const char *fmt, ...) {
+	char buffer[1024];
+	// if I ever send debug string longer than 1024 bytes - "HELIHUD: ",
+	// I will never find this error why application crashes :-)
+	va_list ap;
+    va_start(ap,fmt);
+	strcpy(buffer, "HELIHUD:  ");
+    vsprintf(buffer+9, fmt, ap);
+    va_end(ap);
+	XPLMDebugString(buffer);
 }
 
 void messageXpl(const char *value) {
@@ -119,6 +152,7 @@ HudConfig* initConfig() {
     strcat(lConfig.pluginPath, lSep);
   }
   lConfig.visible = 1;
+  lConfig.toggleOutside = 1;
   lConfig.size = 500.0f;
   lConfig.centered = 1;
   lConfig.x = -1;
@@ -140,6 +174,8 @@ HudConfig* initConfig() {
   lConfig.rngRAltM = -1;
   lConfig.rngIasKt = -1;
   lConfig.rngGSKn = -1;
+  lConfig.rngBalInd = 3; //deg
+  lConfig.rngYawStr = 30; //deg
   // set default colors
   copyColor(clNone, lConfig.clCenterBox);
   copyColor(clNone, lConfig.clVSI);
@@ -152,6 +188,22 @@ HudConfig* initConfig() {
   copyColor(clNone, lConfig.clLandingBarsHigh);
   copyColor(clNone, lConfig.clLandingBarsLow);
   copyColor(clNone, lConfig.clWindArrow);
+  copyColor(clNone, lConfig.clBalInd);
+  // set default everything visible
+  lConfig.visVsiBall = 1;
+  lConfig.visPitchRoll = 1;
+  lConfig.visMovementArrow = 1;
+  lConfig.visLandingBars = 1;
+  lConfig.visVsi = 1;
+  lConfig.visRAlt = 1;
+  lConfig.visIas = 1;
+  lConfig.visGs = 1;
+  lConfig.visWind = 1;
+  lConfig.visAlt = 1;
+  lConfig.visHeading = 1;
+  lConfig.visBalInd = 1;
+  lConfig.visYawStr = 1;
+  lConfig.visTorque = 1;
   // load from file
   loadConfig(&lConfig);
   // replace clNone by defaults
@@ -224,6 +276,12 @@ void loadInt(int *pRes, const char *pKey, const char *pValue, int pMin, int pMax
             lRes, pKey, pMin, pMax);
     debugLog(logMessage);
   }
+}
+
+void loadChar(char *pRes, const char *pKey, const char *pValue, char pMin, char pMax) {
+    int lRes;
+    loadInt(&lRes, pKey, pValue, pMin, pMax);
+    *pRes = (char) lRes;
 }
 
 void loadUnit(char *pRes, const char *pKey, char *pValue, int pMin, int pMax) {
@@ -325,6 +383,8 @@ void loadConfigValue(HudConfig* pConfig, char *pKey, char *pValue) {
     loadInt(&pConfig->showUnits, pKey, pValue, 0, 1);
   else if (strcmp(pKey, "START_VISIBLE") == 0)
     loadInt(&pConfig->visible, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "HIDE_IN_EXTERNAL_VIEW") == 0)
+    loadInt(&pConfig->toggleOutside, pKey, pValue, 0, 1);
   // speed units
   else if (strcmp(pKey, "VS_UNITS") == 0)
     loadUnit(&pConfig->vsUnits, pKey, pValue, SU_MIN, SU_MAX);
@@ -381,18 +441,47 @@ void loadConfigValue(HudConfig* pConfig, char *pKey, char *pValue) {
     loadColor(pConfig->clLandingBarsLow, pKey, pValue);
   else if (strcmp(pKey, "WIND_COLOR") == 0)
     loadColor(pConfig->clWindArrow, pKey, pValue);
+  else if (strcmp(pKey, "BAL_IND_COLOR") == 0)
+    loadColor(pConfig->clBalInd, pKey, pValue);
+// visible flags
+  else if (strcmp(pKey, "VS_BALL_VISIBLE") == 0)
+    loadChar(&pConfig->visVsiBall, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "PITCH_ROLL_VISIBLE") == 0)
+    loadChar(&pConfig->visPitchRoll, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "MOVEMENT_ARROW_VISIBLE") == 0)
+    loadChar(&pConfig->visMovementArrow, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "LANDING_BARS_VISIBLE") == 0)
+    loadChar(&pConfig->visLandingBars, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "VSI_VISIBLE") == 0)
+    loadChar(&pConfig->visVsi, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "RADAR_ALT_VISIBLE") == 0)
+    loadChar(&pConfig->visRAlt, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "IAS_VISIBLE") == 0)
+    loadChar(&pConfig->visIas, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "GS_VISIBLE") == 0)
+    loadChar(&pConfig->visGs, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "WIND_VISIBLE") == 0)
+    loadChar(&pConfig->visWind, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "ALT_VISIBLE") == 0)
+    loadChar(&pConfig->visAlt, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "HEADING_VISIBLE") == 0)
+    loadChar(&pConfig->visHeading, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "BAL_IND_VISIBLE") == 0)
+    loadChar(&pConfig->visBalInd, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "YAW_STR_VISIBLE") == 0)
+    loadChar(&pConfig->visYawStr, pKey, pValue, 0, 1);
+  else if (strcmp(pKey, "TORQUE_VISIBLE") == 0)
+      loadChar(&pConfig->visTorque, pKey, pValue, 0, 1);
   //debugLog(pKey); debugLog(pValue);
 }
 
 void loadConfig(HudConfig* pConfig) {
   char lConfigFileName[512];
-  char lMessage[512];
   strcpy(lConfigFileName, getHudConfig()->pluginPath);
   strcat(lConfigFileName, "helihud.ini");
   if (FILE* lFile = fopen(lConfigFileName, "r"))
   {
-    sprintf(lMessage, "HELIHUD: Reading config file %s.\n", lConfigFileName);
-    debugLog(lMessage);
+    debugLog("Reading config file %s.\n", lConfigFileName);
     char lLine[1024];
     char *lL;
     char *lK;
@@ -429,8 +518,7 @@ void loadConfig(HudConfig* pConfig) {
   }
   else
   {
-    sprintf(lMessage, "HELIHUD: Config file %s does not exist, using default values.\n", lConfigFileName);
-    debugLog(lMessage);
+    debugLog("Config file %s does not exist, using default values.\n", lConfigFileName);
   }
 }
 
@@ -449,6 +537,8 @@ void allignColors(HudConfig* pConfig) {
     copyColor(clGreen, pConfig->clIAS);
   if (!isColorSet(pConfig->clWindArrow))
     copyColor(clBlue, pConfig->clWindArrow);
+  if (!isColorSet(pConfig->clBalInd))
+    copyColor(clPink, pConfig->clBalInd);
 
   if (!isColorSet(pConfig->clMovementBackward) && !isColorSet(pConfig->clMovementForward))
   {
@@ -503,7 +593,19 @@ int initDataRefs() {
   //lTmp += findDataRef("sim/weather/wind_direction_degt[0]", &drWindDirection);
   lTmp += findDataRef("sim/flightmodel/position/indicated_airspeed", &drIAS);
   //lTmp += findDataRef("sim/flightmodel/position/magnetic_variation", &drMagVar);
-
+  //lTmp += findDataRef("sim/graphics/view/view_type", &drCurrentView);
+  lTmp += findDataRef("sim/graphics/view/view_is_external", &drViewIsExternal);
+  lTmp += findDataRef("sim/cockpit2/gauges/indicators/slip_deg", &drBalInd);
+  lTmp += findDataRef("sim/flightmodel2/misc/yaw_string_angle", &drYawStr);
+  lTmp += findDataRef("sim/flightmodel/engine/ENGN_TRQ", &drTrq);  //NewtonMeters
+  lTmp += findDataRef("sim/aircraft/engine/acf_num_engines", &drEnginesNo);
+  lTmp += findDataRef("sim/aircraft/limits/green_lo_TRQ", &drTrqGreenLo); // ft-lbs
+  lTmp += findDataRef("sim/aircraft/limits/green_hi_TRQ", &drTrqGreenHi);
+  lTmp += findDataRef("sim/aircraft/limits/yellow_lo_TRQ", &drTrqYellowLo);
+  lTmp += findDataRef("sim/aircraft/limits/yellow_hi_TRQ", &drTrqYellowHi);
+  lTmp += findDataRef("sim/aircraft/limits/red_lo_TRQ", &drTrqRedLo);
+  lTmp += findDataRef("sim/aircraft/limits/red_hi_TRQ", &drTrqRedHi);
+  lTmp += findDataRef("sim/aircraft/controls/acf_trq_max_eng", &drMaxTrq);
 
   lTmp += registerDataRefs();
   lTmp += registerCommands();
@@ -516,6 +618,29 @@ void unregisterData() {
   XPLMUnregisterCommandHandler(toggleHudCommand, toggleHudCommandHandler, 0, 0);
 }
 
+void initAcfValues() {
+  numberOfEngines = XPLMGetDatai(drEnginesNo);
+  tqGreenLo = XPLMGetDataf(drTrqGreenLo);
+  tqGreenHi = XPLMGetDataf(drTrqGreenHi);
+  tqYellowLo = XPLMGetDataf(drTrqYellowLo);
+  tqYellowHi = XPLMGetDataf(drTrqYellowHi);
+  tqRedLo = XPLMGetDataf(drTrqRedLo);
+  tqRedHi = XPLMGetDataf(drTrqRedHi);
+  tqMax = XPLMGetDataf(drMaxTrq);
+  debugLog("Aircraft init:\nNumber of engines: %d\n", numberOfEngines);
+  debugLog("Max torque: %f\n", tqMax);
+  debugLog("GL: %f\n", tqGreenLo);
+  debugLog("GH: %f\n", tqGreenHi);
+  debugLog("YL: %f\n", tqYellowLo);
+  debugLog("YH: %f\n", tqYellowHi);
+  debugLog("RL: %f\n", tqRedLo);
+  debugLog("RH: %f\n", tqRedHi);
+  debugLog("Max torque: %f\n", 1.23f);
+}
+
+int getTorque(float *pResult) {
+  return XPLMGetDatavf(drTrq, pResult, 0, numberOfEngines);
+}
 float getPitch() {
   return XPLMGetDataf(drPitch);
 }
@@ -555,6 +680,21 @@ float getWindDirection() {
 float getIAS() {
   return XPLMGetDataf(drIAS);
 }
+float getBalance() {
+  return XPLMGetDataf(drBalInd);
+}
+float getYawStringAngle() {
+  return XPLMGetDataf(drYawStr);
+}
+
+
+//int getCurrentView() {
+//  return XPLMGetDatai(drCurrentView);
+//}
+
+int getViewIsExternal() {
+  return XPLMGetDatai(drViewIsExternal);
+}
 
 int     GetHudVisibleCB(void* inRefcon)
 {
@@ -576,14 +716,19 @@ int    toggleHudCommandHandler(XPLMCommandRef       inCommand,
   //  If inPhase == 0 the command is executed once on button down.
   if (inPhase == 0)
   {
-    if (lConfig.visible)
-      lConfig.visible = 0;
-    else
-      lConfig.visible = 1;
+	  if (lConfig.toggleOutside && getViewIsExternal() && lConfig.visible < 2)
+		  lConfig.visible = 2;
+	  else
+		  if (lConfig.visible)
+			  lConfig.visible = 0;
+		  else
+			  lConfig.visible = 1;
+  //char buffer[255];
+  //sprintf(buffer, "Visible set to %d.\n", lConfig.visible);
+  //debugLog(buffer);
   }
   // Return 1 to pass the command to plugin windows and X-Plane.
   // Returning 0 disables further processing by X-Plane.
-
   return 0;
 }
 
