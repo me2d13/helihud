@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPLMUtilities;
@@ -579,13 +579,13 @@ TYPE
    }
    FUNCTION XPLMGetDirectoryContents(
                                         inDirectoryPath     : Pchar;    
-                                        inFirstReturn       : longint;    
+                                        inFirstReturn       : integer;    
                                         outFileNames        : Pchar;    
-                                        inFileNameBufSize   : longint;    
+                                        inFileNameBufSize   : integer;    
                                         outIndices          : PPchar;    { Can be nil }
-                                        inIndexCount        : longint;    
-                                        outTotalFiles       : Plongint;    { Can be nil }
-                                        outReturnedFiles    : Plongint) : integer;    { Can be nil }
+                                        inIndexCount        : integer;    
+                                        outTotalFiles       : Pinteger;    { Can be nil }
+                                        outReturnedFiles    : Pinteger) : integer;    { Can be nil }
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -647,10 +647,9 @@ TYPE
    {
     XPLMDebugString
     
-    This routine outputs a C-style string to the Error.out file (or 
-    deverror.out file if one is being created).  The file is immediately 
-    flushed so you will not lose  data.  (This does cause a performance 
-    penalty.)                                                                   
+    This routine outputs a C-style string to the Log.txt file.  The file is 
+    immediately flushed so you will not lose  data.  (This does cause a 
+    performance penalty.)                                                       
    }
    PROCEDURE XPLMDebugString(
                                         inString            : Pchar);    

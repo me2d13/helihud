@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPWidgets;
@@ -205,8 +205,8 @@ USES   XPWidgetDefs;
                                         inWidget            : XPWidgetID;    
                                         inMessage           : XPWidgetMessage;    
                                         inMode              : XPDispatchMode;    
-                                        inParam1            : longint;    
-                                        inParam2            : longint) : integer;    
+                                        inParam1            : intptr_t;    
+                                        inParam2            : intptr_t) : integer;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
 {$ELSE}
@@ -269,7 +269,7 @@ USES   XPWidgetDefs;
    }
    FUNCTION XPGetNthChildWidget(
                                         inWidget            : XPWidgetID;    
-                                        inIndex             : longint) : XPWidgetID;    
+                                        inIndex             : integer) : XPWidgetID;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
 {$ELSE}
@@ -510,7 +510,7 @@ USES   XPWidgetDefs;
    FUNCTION XPGetWidgetDescriptor(
                                         inWidget            : XPWidgetID;    
                                         outDescriptor       : Pchar;    
-                                        inMaxDescLength     : longint) : longint;    
+                                        inMaxDescLength     : integer) : integer;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
 {$ELSE}
@@ -526,7 +526,7 @@ USES   XPWidgetDefs;
    PROCEDURE XPSetWidgetProperty(
                                         inWidget            : XPWidgetID;    
                                         inProperty          : XPWidgetPropertyID;    
-                                        inValue             : longint);    
+                                        inValue             : intptr_t);    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
 {$ELSE}
@@ -545,7 +545,7 @@ USES   XPWidgetDefs;
    FUNCTION XPGetWidgetProperty(
                                         inWidget            : XPWidgetID;    
                                         inProperty          : XPWidgetPropertyID;    
-                                        inExists            : Pinteger) : longint;    { Can be nil }
+                                        inExists            : Pinteger) : intptr_t;    { Can be nil }
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
 {$ELSE}

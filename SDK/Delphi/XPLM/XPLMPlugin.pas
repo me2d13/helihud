@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPLMPlugin;
@@ -49,7 +49,7 @@ USES   XPLMDefs;
     This routine returns the total number of plug-ins that are loaded, both 
     disabled and enabled.                                                       
    }
-   FUNCTION XPLMCountPlugins: longint;
+   FUNCTION XPLMCountPlugins: integer;
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -64,7 +64,7 @@ USES   XPLMDefs;
     order.                                                                      
    }
    FUNCTION XPLMGetNthPlugin(
-                                        inIndex             : longint) : XPLMPluginID;    
+                                        inIndex             : integer) : XPLMPluginID;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -229,8 +229,7 @@ CONST
    XPLM_MSG_PLANE_LOADED = 102;
 
     { This messages is called whenever the user's plane is positioned at a new    }
-    { airport. The parameter is of type int, passed as the value of the pointer.  }
-    { (That is: the parameter is an int, not a pointer to an int.)                }
+    { airport.                                                                    }
    XPLM_MSG_AIRPORT_LOADED = 103;
 
     { This message is sent whenever new scenery is loaded.  Use datarefs to       }
@@ -251,6 +250,24 @@ CONST
    XPLM_MSG_PLANE_UNLOADED = 106;
 {$ENDIF}
 
+{$IFDEF XPLM210}
+    { This message is sent to your plugin right before X-Plane writes its         }
+    { preferences file.  You can use this for two purposes: to write your own     }
+    { preferences, and to modify any datarefs to influence preferences output.    }
+    { For example, if your plugin temporarily modifies saved preferences, you can }
+    { put them back to their default values here to avoid  having the tweaks be   }
+    { persisted if your plugin is not loaded on the next invocation of X-Plane.   }
+   XPLM_MSG_WILL_WRITE_PREFS = 107;
+{$ENDIF}
+
+{$IFDEF XPLM210}
+    { This message is sent to your plugin right after a livery is loaded for an   }
+    { airplane.  You can use this to check the new livery (via datarefs) and      }
+    { react accordingly.  The parameter is of type int, passed as the value of a  }
+    { pointer and represents the aicraft plane number - 0 is the user's plane.    }
+   XPLM_MSG_LIVERY_LOADED = 108;
+{$ENDIF}
+
    {
     XPLMSendMessageToPlugin
     
@@ -260,7 +277,7 @@ CONST
    }
    PROCEDURE XPLMSendMessageToPlugin(
                                         inPlugin            : XPLMPluginID;    
-                                        inMessage           : longint;    
+                                        inMessage           : integer;    
                                         inParam             : pointer);    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';

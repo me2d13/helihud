@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPLMScenery;
@@ -178,7 +178,6 @@ TYPE
 {$ENDIF}
 
 {$ENDIF}
-{$IFDEF XPLM200}
 {___________________________________________________________________________
  * Object Drawing
  ___________________________________________________________________________}
@@ -191,7 +190,7 @@ TYPE
 
 
 
-
+{$IFDEF XPLM200}
 TYPE
    {
     XPLMObjectRef
@@ -201,7 +200,9 @@ TYPE
    }
    XPLMObjectRef = pointer;
    PXPLMObjectRef = ^XPLMObjectRef;
+{$ENDIF}
 
+{$IFDEF XPLM200}
    {
     XPLMDrawInfo_t
     
@@ -226,7 +227,27 @@ TYPE
      roll                     : single;
    END;
    PXPLMDrawInfo_t = ^XPLMDrawInfo_t;
+{$ENDIF}
 
+{$IFDEF XPLM210}
+   {
+    XPLMObjectLoaded_f
+    
+    You provide this callback when loading an object asynchronously; it will be 
+    called once the object is loaded.  Your refcon is passed back.  The object 
+    ref passed in is the newly loaded object (ready for use) or NULL if an 
+    error occured. 
+    
+    If your plugin is disabled, this callback will be delivered as soon as the 
+    plugin is re-enabled.  If your plugin is unloaded before this callback is 
+    ever called, the SDK will release the object handle for you.                
+   }
+     XPLMObjectLoaded_f = PROCEDURE(
+                                    inObject            : XPLMObjectRef;    
+                                    inRefcon            : pointer); cdecl;   
+{$ENDIF}
+
+{$IFDEF XPLM200}
    {
     XPLMLoadObject
     
@@ -257,7 +278,37 @@ TYPE
 {$ELSE}
                                        cdecl; external '';
 {$ENDIF}
+{$ENDIF}
 
+{$IFDEF XPLM210}
+   {
+    XPLMLoadObjectAsync
+    
+    This routine loads an object asynchronously; control is returned to you 
+    immediately while X-Plane loads the object.  The sim will not stop flying 
+    while the object loads.  For large objects, it may be several seconds 
+    before the load finishes. 
+    
+    You provide a callback function that is called once the load has completed. 
+    Note that if the object cannot be loaded, you will not find out until the 
+    callback function is called with a NULL object handle.   
+    
+    There is no way to cancel an asynchronous object load; you must wait for 
+    the load to complete and then release the object if it is no longer 
+    desired.                                                                    
+   }
+   PROCEDURE XPLMLoadObjectAsync(
+                                        inPath              : Pchar;    
+                                        inCallback          : XPLMObjectLoaded_f;    
+                                        inRefcon            : pointer);    
+{$IFDEF DELPHI}
+                                       cdecl; external 'XPLM.DLL';
+{$ELSE}
+                                       cdecl; external '';
+{$ENDIF}
+{$ENDIF}
+
+{$IFDEF XPLM200}
    {
     XPLMDrawObjects
     
@@ -292,7 +343,9 @@ TYPE
 {$ELSE}
                                        cdecl; external '';
 {$ENDIF}
+{$ENDIF}
 
+{$IFDEF XPLM200}
    {
     XPLMUnloadObject
     
@@ -308,8 +361,8 @@ TYPE
 {$ELSE}
                                        cdecl; external '';
 {$ENDIF}
-
 {$ENDIF}
+
 {$IFDEF XPLM200}
 {___________________________________________________________________________
  * Library Access

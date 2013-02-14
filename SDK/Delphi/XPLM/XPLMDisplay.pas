@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPLMDisplay;
@@ -777,7 +777,7 @@ TYPE
     
     Returns the number of current hot keys.                                     
    }
-   FUNCTION XPLMCountHotKeys: longint;
+   FUNCTION XPLMCountHotKeys: integer;
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -790,7 +790,7 @@ TYPE
     Returns a hot key by index, for iteration on all hot keys.                  
    }
    FUNCTION XPLMGetNthHotKey(
-                                        inIndex             : longint) : XPLMHotKeyID;    
+                                        inIndex             : integer) : XPLMHotKeyID;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}

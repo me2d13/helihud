@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPLMNavigation;
@@ -221,7 +221,12 @@ CONST
     The buffer for IDs should be at least 6 chars and the buffer for names 
     should be at least 41 chars, but since these values are likely to go up, I 
     recommend passing at least 32 chars for IDs and 256 chars for names when 
-    possible.                                                                   
+    possible. 
+    
+    The outReg parameter tells if the navaid is within the local "region" of 
+    loaded DSFs.  (This information may not be particularly useful to plugins.) 
+    The parameter is a single byte value 1 for true or 0 for false, not a C 
+    string.                                                                     
    }
    PROCEDURE XPLMGetNavAidInfo(
                                         inRef               : XPLMNavRef;    
@@ -260,7 +265,7 @@ CONST
     
     This routine returns the number of entries in the FMS.                      
    }
-   FUNCTION XPLMCountFMSEntries: longint;
+   FUNCTION XPLMCountFMSEntries: integer;
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -272,7 +277,7 @@ CONST
     
     This routine returns the index of the entry the pilot is viewing.           
    }
-   FUNCTION XPLMGetDisplayedFMSEntry: longint;
+   FUNCTION XPLMGetDisplayedFMSEntry: integer;
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -284,7 +289,7 @@ CONST
     
     This routine returns the index of the entry the FMS is flying to.           
    }
-   FUNCTION XPLMGetDestinationFMSEntry: longint;
+   FUNCTION XPLMGetDestinationFMSEntry: integer;
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -297,7 +302,7 @@ CONST
     This routine changes which entry the FMS is showing to the index specified. 
        }
    PROCEDURE XPLMSetDisplayedFMSEntry(
-                                        inIndex             : longint);    
+                                        inIndex             : integer);    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -310,7 +315,7 @@ CONST
     This routine changes which entry the FMS is flying the aircraft toward.     
    }
    PROCEDURE XPLMSetDestinationFMSEntry(
-                                        inIndex             : longint);    
+                                        inIndex             : integer);    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -329,11 +334,11 @@ CONST
     length.                                                                     
    }
    PROCEDURE XPLMGetFMSEntryInfo(
-                                        inIndex             : longint;    
+                                        inIndex             : integer;    
                                         outType             : PXPLMNavType;    { Can be nil }
                                         outID               : Pchar;    { Can be nil }
                                         outRef              : PXPLMNavRef;    { Can be nil }
-                                        outAltitude         : Plongint;    { Can be nil }
+                                        outAltitude         : Pinteger;    { Can be nil }
                                         outLat              : Psingle;    { Can be nil }
                                         outLon              : Psingle);    { Can be nil }
 {$IFDEF DELPHI}
@@ -351,9 +356,9 @@ CONST
     support VORs and NDBs. Use the routines below to clear or fly to a lat/lon. 
    }
    PROCEDURE XPLMSetFMSEntryInfo(
-                                        inIndex             : longint;    
+                                        inIndex             : integer;    
                                         inRef               : XPLMNavRef;    
-                                        inAltitude          : longint);    
+                                        inAltitude          : integer);    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -367,10 +372,10 @@ CONST
     coordinates.                                                                
    }
    PROCEDURE XPLMSetFMSEntryLatLon(
-                                        inIndex             : longint;    
+                                        inIndex             : integer;    
                                         inLat               : single;    
                                         inLon               : single;    
-                                        inAltitude          : longint);    
+                                        inAltitude          : integer);    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
@@ -384,7 +389,7 @@ CONST
     plan.                                                                       
    }
    PROCEDURE XPLMClearFMSEntry(
-                                        inIndex             : longint);    
+                                        inIndex             : integer);    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}

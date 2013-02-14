@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPLMMenus;
@@ -236,6 +236,23 @@ TYPE
                                        cdecl; external 'XPLM.DLL';
 {$ELSE}
                                        cdecl; external '';
+{$ENDIF}
+
+{$IFDEF XPLM210}
+   {
+    XPLMRemoveMenuItem
+    
+    Removes one item from a menu.  Note that all menu items below are moved up 
+    one; your plugin must track the change in index numbers.                    
+   }
+   PROCEDURE XPLMRemoveMenuItem(
+                                        inMenu              : XPLMMenuID;    
+                                        inIndex             : integer);    
+{$IFDEF DELPHI}
+                                       cdecl; external 'XPLM.DLL';
+{$ELSE}
+                                       cdecl; external '';
+{$ENDIF}
 {$ENDIF}
 
 IMPLEMENTATION

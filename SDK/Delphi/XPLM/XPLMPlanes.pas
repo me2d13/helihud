@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPLMPlanes;
@@ -83,7 +83,7 @@ CONST
 TYPE
    XPLMPlaneDrawState_t = RECORD
      { The size of the draw state struct.                                          }
-     structSize               : longint;
+     structSize               : integer;
      { A ratio from [0..1] describing how far the landing gear is extended.        }
      gearPosition             : single;
      { Ratio of flap deployment, 0 = up, 1 = full deploy.                          }

@@ -1,9 +1,9 @@
 {
-   Copyright 2005 Sandy Barbour and Ben Supnik
+   Copyright 2005-2012 Sandy Barbour and Ben Supnik
    
    All rights reserved.  See license.txt for usage.
    
-   X-Plane SDK Version: 1.0.2                                                  
+   X-Plane SDK Version: 2.1.1                                                  
 }
 
 UNIT XPWidgetUtils;
@@ -97,7 +97,7 @@ CONST
    }
    PROCEDURE XPUCreateWidgets(
                                         inWidgetDefs        : PXPWidgetCreate_t;    
-                                        inCount             : longint;    
+                                        inCount             : integer;    
                                         inParamParent       : XPWidgetID;    
                                         ioWidgets           : PXPWidgetID);    
 {$IFDEF DELPHI}
@@ -143,8 +143,8 @@ CONST
    FUNCTION XPUFixedLayout(
                                         inMessage           : XPWidgetMessage;    
                                         inWidget            : XPWidgetID;    
-                                        inParam1            : longint;    
-                                        inParam2            : longint) : integer;    
+                                        inParam1            : intptr_t;    
+                                        inParam2            : intptr_t) : integer;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
 {$ELSE}
@@ -172,8 +172,8 @@ CONST
    FUNCTION XPUSelectIfNeeded(
                                         inMessage           : XPWidgetMessage;    
                                         inWidget            : XPWidgetID;    
-                                        inParam1            : longint;    
-                                        inParam2            : longint;    
+                                        inParam1            : intptr_t;    
+                                        inParam2            : intptr_t;    
                                         inEatClick          : integer) : integer;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
@@ -190,8 +190,8 @@ CONST
    FUNCTION XPUDefocusKeyboard(
                                         inMessage           : XPWidgetMessage;    
                                         inWidget            : XPWidgetID;    
-                                        inParam1            : longint;    
-                                        inParam2            : longint;    
+                                        inParam1            : intptr_t;    
+                                        inParam2            : intptr_t;    
                                         inEatClick          : integer) : integer;    
 {$IFDEF DELPHI}
                                        cdecl; external 'XPWIDGETS.DLL';
@@ -209,8 +209,8 @@ CONST
    FUNCTION XPUDragWidget(
                                         inMessage           : XPWidgetMessage;    
                                         inWidget            : XPWidgetID;    
-                                        inParam1            : longint;    
-                                        inParam2            : longint;    
+                                        inParam1            : intptr_t;    
+                                        inParam2            : intptr_t;    
                                         inLeft              : integer;    
                                         inTop               : integer;    
                                         inRight             : integer;    
